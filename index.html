@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClinicOS — Clinic Management Platform</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Supabase CDN (UMD build sets window.supabase globally) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- SheetJS for Excel parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     AUTH SCREEN
+══════════════════════════════════════════════ -->
+<div id="authScreen">
+  <div class="auth-left">
+    <div class="auth-brand">
+      <div class="logo-ring">🏥</div>
+      <h1>ClinicOS</h1>
+      <p>Complete clinic management platform — daily operations, payroll, appointments, and SMS marketing.</p>
+    </div>
+    <div class="auth-features">
+      <div class="auth-feature"><span class="fi">📋</span><span class="ft">Replace Google Sheets — digital daily entry with CliQ, Cash, Visa & Shots</span></div>
+      <div class="auth-feature"><span class="fi">💰</span><span class="ft">Auto payroll — Doctor 50% profit + Specialist fixed commissions</span></div>
+      <div class="auth-feature"><span class="fi">📱</span><span class="ft">SMS marketing via Unifonic — confirm appointments & send campaigns</span></div>
+      <div class="auth-feature"><span class="fi">🔐</span><span class="ft">Admin controls every permission — what each employee sees or edits</span></div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-form-box slide-up">
+      <h2>Welcome back</h2>
+      <p class="auth-sub">Sign in with your credentials. Your access is configured by the administrator.</p>
+      <div class="field">
+        <label>Email Address</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">✉️</span>
+          <input type="email" id="loginEmail" placeholder="yourname@clinic.com" autocomplete="email">
+        </div>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"
+            onkeydown="if(event.key==='Enter') doLogin()">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:8px" onclick="doLogin()">Sign In →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     APP SHELL (shown after login)
+══════════════════════════════════════════════ -->
+<div id="appShell">
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sb-top">
+        <div class="sb-logo">
+          <div class="lm">🏥</div>
+          <div class="ln">
+            <strong>ClinicOS</strong>
+            <span>Management Platform</span>
+          </div>
+        </div>
+        <div class="sb-clinic">
+          <div class="dot"></div>
+          <span id="clinicNameSb">Loading…</span>
+        </div>
+      </div>
+      <nav class="sb-nav" id="sidebarNav"></nav>
+      <div class="sb-user">
+        <div class="sb-user-chip">
+          <div class="ua av" id="sbAvatar" style="width:34px;height:34px;font-size:13px;background:#0d7377;color:#fff;border:none">…</div>
+          <div class="ui-info">
+            <div class="un" id="sbName">Loading…</div>
+            <div class="ur" id="sbRole">…</div>
+          </div>
+          <button class="sb-logout" onclick="doLogout()" title="Sign out">⏻</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="tb-left">
+          <div class="tb-title" id="tbTitle">Dashboard</div>
+          <div class="tb-path"  id="tbPath">Home › Dashboard</div>
+        </div>
+        <div class="tb-right">
+          <div class="tb-date" id="tbDate">📅 Loading…</div>
+          <div id="tbActions"></div>
+        </div>
+      </div>
+
+      <!-- Main page content -->
+      <div class="main-pad">
+        <div id="pageContent">
+          <div class="empty-state"><div class="spinner"></div><p>Starting up…</p></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.layout -->
+</div><!-- /#appShell -->
+
+<!-- ══════════════════════════════════════════════
+     MODAL OVERLAY
+══════════════════════════════════════════════ -->
+<div class="overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalBox">
+    <div class="modal-head" id="modalHead">
+      <h3>Modal</h3>
+      <button class="mc-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<!-- Toast stack -->
+<div class="toast-stack" id="toastStack"></div>
+
+<!-- Hidden print target -->
+<div id="printTarget" style="display:none"></div>
+
+<!-- ══════════════════════════════════════════════
+     JS MODULES (order matters)
+══════════════════════════════════════════════ -->
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db.js"></script>
+<script src="js/operations.js"></script>
+<script src="js/payroll.js"></script>
+<script src="js/reports.js"></script>
+<script src="js/sms.js"></script>
+<script src="js/app.js"></script>
+
+<script>
+  // Boot: check for existing session
+  window.addEventListener('DOMContentLoaded', () => {
+    checkSession();
+  });
+</script>
+</body>
+</html>
