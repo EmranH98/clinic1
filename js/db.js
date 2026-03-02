@@ -13,7 +13,7 @@ async function loadRefData() {
   const branchFilter = me.role === 'admin' ? {} : { branch_id: me.branch_id };
 
   const [{ data: branches }, { data: profiles }, { data: procedures }] = await Promise.all([
-    supabase.from('branches').select('*').order('name'),
+    supabase.from('branches').select('*').order('name')
     supabase.from('profiles').select('*').eq('active', true).order('name'),
     supabase.from('procedures').select('*').eq('active', true).order('name')
   ]);
@@ -35,7 +35,7 @@ function getStaff()       { return _profiles.filter(p => p.active); }
 
 async function getOperations({ date, month, year, dateFrom, dateTo, specialistId, doctorId, branchId, search } = {}) {
   const _buildQuery = (withProcedures) => {
-    let q = supabase.from('operations_with_total').select(
+    let q = supabase.from('operations').select(
       withProcedures
         ? `*, specialist:specialist_id(id,name,specialist_type,commission_rate), doctor:doctor_id(id,name), procedure:procedure_id(id,name,name_ar,doctor_profit_pct,specialist_commission,service_type,gender,category), op_procedures:operation_procedures(id,quantity,specialist_commission_override,procedure:procedure_id(id,name,name_ar,specialist_commission,doctor_profit_pct))`
         : `*, specialist:specialist_id(id,name,specialist_type,commission_rate), doctor:doctor_id(id,name), procedure:procedure_id(id,name,name_ar,doctor_profit_pct,specialist_commission,service_type,gender,category)`
