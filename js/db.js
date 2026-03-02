@@ -13,7 +13,7 @@ async function loadRefData() {
   const branchFilter = me.role === 'admin' ? {} : { branch_id: me.branch_id };
 
   const [{ data: branches }, { data: profiles }, { data: procedures }] = await Promise.all([
-    supabase.from('branches').select('*').order('name')
+    supabase.from('branches').select('*').order('name'),
     supabase.from('profiles').select('*').eq('active', true).order('name'),
     supabase.from('procedures').select('*').eq('active', true).order('name')
   ]);
