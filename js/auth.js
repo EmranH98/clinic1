@@ -3,8 +3,8 @@
 // =====================================================
 
 // Current user profile (set after login)
-let me = null;
-
+var me = null;  // attaches to window.me
+window.me = me; // ensure property exists
 // ── Login ─────────────────────────────────────────
 async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim().toLowerCase();
