@@ -23,7 +23,8 @@
     root + '/js/ui-nav.js',
     root + '/js/ui-patients.js',
     root + '/js/ui-settings.js',
-    root + '/js/ui-appointments.js'
+    root + '/js/ui-appointments.js',
+    root + '/js/ui-hotfix.js'
   ];
 
   // load styling
