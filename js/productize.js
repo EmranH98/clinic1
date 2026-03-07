@@ -1,26 +1,91 @@
-// UI loader with versioned asset loading + visible version badge (so we can confirm it loaded).
-(function () {
+// UI loader v13: forces newer modules to load after login.
+(function(){
   if (window.__productize_booted) return;
   window.__productize_booted = true;
 
-  const version = 'v12';
+  const version = 'v13';
+  const scripts = [
+    'js/ui-core.js',
+    'js/ui-nav.js',
+    'js/ui-patients.js',
+    'js/ui-settings.js',
+    'js/ui-appointments.js',
+    'js/ui-hotfix.js',
+    'js/ui-boot.js'
+  ];
+  const cssFiles = [
+    'css/ui-rebuild.css'
+  ];
 
-  function inferRoot() {
-    try {
+  function inferRoot(){
+    try{
       const s = document.currentScript;
-      if (!s) return '';
+      if(!s) return '';
       const src = s.src || '';
       const idx = src.indexOf('/js/productize.js');
-      if (idx === -1) return '';
+      if(idx === -1) return '';
       return src.slice(0, idx);
-    } catch (e) {
+    }catch(e){
       return '';
     }
   }
-
   const root = inferRoot();
 
-  // Visible badge after login so we can verify live quickly
+  // Glue the global lexical `me` binding (from auth.js) onto window/globalThis
+  // so modules that check window.me do not crash.
+  const syncMe = () => {
+    try {
+      if (typeof me !== 'undefined') {
+        window.me = me;
+        globalThis.me = me;
+      }
+    } catch (e) {
+      // ignore ReferenceError
+    }
+  };
+  syncMe();
+  const t = setInterval(() => {
+    syncMe();
+    if (window.me && window.me.name) clearInterval(t);
+  }, 50);
+
+  function loadCSS(path){
+    return new Promise((resolve) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = `${root}/${path}?v=${version}`;
+      link.onload = () => resolve(true);
+      link.onerror = () => resolve(false);
+      document.head.appendChild(link);
+    });
+  }
+
+  function loadScript(path){
+    return new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = `${root}/${path}?v=${version}`;
+      s.async = false;
+      s.onload = () => resolve(true);
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+    });
+  }
+
+  cssFiles.forEach((c) => loadCSS(c));
+
+  scripts
+    .reduce((p, x) => p.then(() => loadScript(x)), Promise.resolve())
+    .then(() => {
+      try {
+        if (typeof window.uiRebuildBootstrap === 'function') {
+          window.uiRebuildBootstrap();
+        }
+      } catch (e) {
+        // ignore
+      }
+    });
+
+  // Visible version badge
   try {
     const badge = document.createElement('div');
     badge.textContent = version;
@@ -28,67 +93,15 @@
     badge.style.right = '8px';
     badge.style.top = '8px';
     badge.style.padding = '3px 8px';
+    badge.style.background = 'rgba(15, 23, 42, 0.85)';
+    badge.style.color = '#e2e8f0';
+    badge.style.font = '12px/1 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
     badge.style.borderRadius = '999px';
-    badge.style.fontSize = '12px';
-    badge.style.background = '#0f172a';
-    badge.style.color = 'white';
-    badge.style.zIndex = 999999;
-    badge.style.opacity = '0.75';
-    document.documentElement.appendChild(badge);
-  } catch {}
-
-  if (!root) return;
-
-  const cssHref = `${root}/css/ui-rebuild.css?v=${version}`;
-  const scripts = [
-    `${root}/js/ui-core.js?v=${version}`,
-    `${root}/js/ui-nav.js?v=${version}`,
-    `${root}/js/ui-patients.js?v=${version}`,
-    `${root}/js/ui-settings.js?v=${version}`,
-    `${root}/js/ui-appointments.js?v=${version}`,
-    `${root}/js/ui-hotfix.js?v=${version}`,
-    `${root}/js/ui-boot.js?v=${version}`
-  ];
-
-  function loadCss(href) {
-    return new Promise((resolve) => {
-      try {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = href;
-        link.onload = () => resolve();
-        link.onerror = () => resolve();
-        document.head.appendChild(link);
-      } catch {
-        resolve();
-      }
+    badge.style.zIndex = 9999;
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.appendChild(badge);
     });
+  } catch (e) {
+    // ignore
   }
-
-  function loadScript(src) {
-    return new Promise((resolve) => {
-      try {
-        const s = document.createElement('script');
-        s.src = src;
-        s.onload = () => resolve();
-        s.onerror = () => resolve();
-        document.head.appendChild(s);
-      } catch {
-        resolve();
-      }
-    });
-  }
-
-  (async () => {
-    await loadCss(cssHref);
-    for (const src of scripts) {
-      await loadScript(src);
-    }
-
-    if (window.uiRebuildBootstrap) {
-      try {
-        await window.uiRebuildBootstrap();
-      } catch {}
-    }
-  })();
 })();
