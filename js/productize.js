@@ -1,7 +1,9 @@
-// Small, stable loader to bring in the UI rebuild modules.
-(function() {
+// UI loader with versioned asset loading + visible version badge (so we can confirm it loaded).
+(function () {
   if (window.__productize_booted) return;
   window.__productize_booted = true;
+
+  const version = 'v11';
 
   function inferRoot() {
     try {
@@ -27,36 +29,65 @@
     root + '/js/ui-hotfix.js'
   ];
 
+  // visible version badge to prove the UI loader is active (remove later)
+  try {
+    const badge = document.createElement('div');
+    badge.id = 'uiVersionBadge';
+    badge.textContent = version;
+    badge.setAttribute('title', 'ClinicOS UI build version');
+    badge.style.cssText = [
+      'position:fixed',
+      'top:8px',
+      'right:10px',
+      'z-index:9999',
+      'font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif',
+      'font-size:11px',
+      'line-height:1',
+      'background:rgba(17,24,39,.85)',
+      'color:rgba(255,255,255,.9)',
+      'padding:3px 7px',
+      'border-radius:9999px',
+      'border:1px solid rgba(255,255,255,.18)',
+      'box-shadow:0 10px 25px rgba(0,0,0,.18)',
+      'pointer-events:none'
+    ].join(';');
+
+    const inject = () => {
+      if (!document.body) return;
+      if (!document.getElementById('uiVersionBadge')) {
+        document.body.appendChild(badge);
+      }
+    };
+
+    inject();
+    document.addEventListener('DOMContentLoaded', inject, { once: true });
+  } catch (e) {}
+
   // load styling
   try {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = cssHref;
+    link.href = cssHref + '?v=' + version;
     document.head.appendChild(link);
-  } catch (e) {
-    console.warn('CSS load warning', e);
-  }
+  } catch (e) {}
 
   function loadScript(src) {
     return new Promise((resolve) => {
-      const el = document.createElement('script');
-      el.src = src;
-      el.async = false;
-      el.onload = () => resolve();
-      el.onerror = () => resolve();
-      document.head.appendChild(el);
+      try {
+        const el = document.createElement('script');
+        el.src = src + '?v=' + version;
+        el.async = false;
+        el.onload = () => resolve();
+        el.onerror = () => resolve();
+        document.head.appendChild(el);
+      } catch (e) {
+        resolve();
+      }
     });
   }
 
   (async () => {
-    for (const s of scripts) {
-      if (!s) continue;
-      await loadScript(s);
-    }
-    try {
-      window.uiRebuildBootstrap?.();
-    } catch (e) {
-      console.error('productize bootstrap failed', e);
-    }
+    for (const s of scripts) await loadScript(s);
+    if (window.uiRebuildBootstrap) await window.uiRebuildBootstrap();
   })();
 })();
