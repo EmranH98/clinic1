@@ -1,16 +1,17 @@
-(function(){
-  if(window.__productize_booted) return;
+// Small, stable loader to bring in the UI rebuild modules.
+(function() {
+  if (window.__productize_booted) return;
   window.__productize_booted = true;
 
-  function inferRoot(){
-    try{
+  function inferRoot() {
+    try {
       const s = document.currentScript;
-      if(!s) return '';
+      if (!s) return '';
       const src = s.src || '';
       const idx = src.indexOf('/js/productize.js');
-      if(idx === -1) return '';
+      if (idx === -1) return '';
       return src.slice(0, idx);
-    }catch(e){
+    } catch (e) {
       return '';
     }
   }
@@ -21,7 +22,8 @@
     root + '/js/ui-core.js',
     root + '/js/ui-nav.js',
     root + '/js/ui-patients.js',
-    root + '/js/ui-settings.js'
+    root + '/js/ui-settings.js',
+    root + '/js/ui-appointments.js'
   ];
 
   // load styling
@@ -30,28 +32,30 @@
     link.rel = 'stylesheet';
     link.href = cssHref;
     document.head.appendChild(link);
-  } catch (e) {}
-
-  function loadScriptSequentially(list){
-    return list.reduce((p, src) => p.then(() => new Promise(resolve => {
-      try {
-        const s = document.createElement('script');
-        s.src = src;
-        s.async = false;
-        s.onload = () => resolve(true);
-        s.onerror = () => resolve(true);
-        document.head.appendChild(s);
-      } catch (e) {
-        resolve(true);
-      }
-    })), Promise.resolve(true));
+  } catch (e) {
+    console.warn('CSS load warning', e);
   }
 
-  loadScriptSequentially(scripts).then(() => {
+  function loadScript(src) {
+    return new Promise((resolve) => {
+      const el = document.createElement('script');
+      el.src = src;
+      el.async = false;
+      el.onload = () => resolve();
+      el.onerror = () => resolve();
+      document.head.appendChild(el);
+    });
+  }
+
+  (async () => {
+    for (const s of scripts) {
+      if (!s) continue;
+      await loadScript(s);
+    }
     try {
-      if(typeof window.uiRebuildBootstrap === 'function'){
-        window.uiRebuildBootstrap();
-      }
-    } catch (e) {}
-  });
+      window.uiRebuildBootstrap?.();
+    } catch (e) {
+      console.error('productize bootstrap failed', e);
+    }
+  })();
 })();
